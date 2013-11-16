@@ -23,8 +23,9 @@ public class BlockDetector : MonoBehaviour {
 	}
 	
 	
-	void SendCollideState(bool collide) {
-		gameObject.SendMessageUpwards("CollidePlayer", collide, SendMessageOptions.DontRequireReceiver);	
+	
+	void SendCollideState(bool isCollide) {
+		gameObject.SendMessageUpwards("CollidePlayer", isCollide, SendMessageOptions.DontRequireReceiver);	
 	}
 	
 	

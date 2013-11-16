@@ -10,7 +10,7 @@ public class BlockManager : MonoBehaviour {
 	bool justOnce = false;
 
 	GameObject prefab_Block;
-	string prefab_version = "BlockV3";
+	public static string prefab_version = "BlockV4";
 	
 	GameObject blockParent;
 	
@@ -32,12 +32,49 @@ public class BlockManager : MonoBehaviour {
 	
 	//For GUI START
 	public bool GUIStart = false;
+	
+	int	gui_lineHeight = 20;
+	int gui_start_x = 5;
+	int gui_start_y = 5;
+	
+	int gui_padding = 30;
+	
 	string gui_Size = "2";
 	string gui_Row = "100";
 	string gui_Column = "100";
+	
 	bool   gui_UseAnimation = false;
+	bool   gui_UseFade      = true;
+	
+	bool gui_Fade {
+		set {
+			if(value == true) {
+				gui_UseFade = true;
+				gui_UseAnimation = false;
+			}
+		}
+		
+		get {
+			return gui_UseFade;
+		}
+	}
+	bool gui_Animation {
+		set {
+			if(value == true) {
+				gui_UseAnimation = true;
+				gui_UseFade = false;
+			}
+		}
+		
+		get {
+			return gui_UseAnimation;
+		}
+	}
+	
 	bool   gui_FastSpawn = false;
 	bool   gui_LigthOnStart = false;
+	
+	bool   gui_RandomHeight = false;
 
 	#endregion
 	
@@ -92,15 +129,22 @@ public class BlockManager : MonoBehaviour {
 		
 		if(GUIStart) {
 
-			GUI.Label(new Rect(5, 5, 105, 20), "Block Scale (int)"); gui_Size  = GUI.TextField(new Rect(105, 5, 40, 20), gui_Size);
-			GUI.Label(new Rect(5, 25, 75, 20), "Row (int)");         gui_Row   = GUI.TextField(new Rect(105, 25, 40, 20), gui_Row);
-			GUI.Label(new Rect(5, 45, 75, 20), "Column (int)");       gui_Column = GUI.TextField(new Rect(105, 45, 40, 20), gui_Column);
+			GUI.Label(new Rect(gui_start_x, gui_start_y,                    105, gui_lineHeight), "Block Scale (int)"); gui_Size   = GUI.TextField(new Rect(105, gui_start_y                   , 3*gui_lineHeight, gui_lineHeight), gui_Size);
+			GUI.Label(new Rect(gui_start_x, gui_start_y + gui_lineHeight,    75, gui_lineHeight), "Row (int)");         gui_Row    = GUI.TextField(new Rect(105, gui_start_y +   gui_lineHeight, 3*gui_lineHeight, gui_lineHeight), gui_Row);
+			GUI.Label(new Rect(gui_start_x, gui_start_y + 2*gui_lineHeight,  75, gui_lineHeight), "Column (int)");      gui_Column = GUI.TextField(new Rect(105, gui_start_y + 2*gui_lineHeight, 3*gui_lineHeight, gui_lineHeight), gui_Column);
 			
-			gui_UseAnimation = GUI.Toggle(new Rect(35, 75, 200, 20),  gui_UseAnimation, "Animation?");
-			gui_FastSpawn    = GUI.Toggle(new Rect(35, 95, 200, 20),  gui_FastSpawn,    "Fast Spawn?");
-			gui_LigthOnStart = GUI.Toggle(new Rect(35, 115, 200, 20), gui_LigthOnStart, "Light On Start?");
 			
-			if(GUI.Button(new Rect(45, 145, 80, 25), "Start")) {
+			GUI.Label(new Rect(gui_start_x, gui_start_y + 3*gui_lineHeight, 400, gui_lineHeight), "What method would you like to use at start?");
+			
+			gui_Animation = GUI.Toggle(new Rect(gui_start_x + gui_padding, gui_start_y + 4*gui_lineHeight, 100, gui_lineHeight),  gui_UseAnimation, "Animation");
+			gui_Fade      = GUI.Toggle(new Rect(2*(gui_start_x + gui_padding) + GUILayoutUtility.GetRect(new GUIContent("Animation"), "label").width, gui_start_y + 4*gui_lineHeight, 200, gui_lineHeight),  gui_UseFade, "Fade");
+			
+			gui_FastSpawn    = GUI.Toggle(new Rect(gui_start_x, gui_start_y + 5*gui_lineHeight, 200, gui_lineHeight),    gui_FastSpawn, "Fast Spawn?");
+			gui_LigthOnStart = GUI.Toggle(new Rect(gui_start_x, gui_start_y + 6*gui_lineHeight, 200, gui_lineHeight), gui_LigthOnStart, "Light On Start?");
+			
+			gui_RandomHeight = GUI.Toggle(new Rect(gui_start_x, gui_start_y + 7*gui_lineHeight, 200, gui_lineHeight), gui_RandomHeight, "Random Height?");
+			
+			if(GUI.Button(new Rect(gui_start_x + gui_padding/2, gui_start_y + 8*gui_lineHeight, 80, gui_lineHeight), "Start")) {
 				
 				int sc = int.Parse(gui_Size);
 				blockSize = new Vector3(sc, 1, sc);
@@ -131,8 +175,10 @@ public class BlockManager : MonoBehaviour {
 	
 	void Init() {
 		
-		float time = 0;
-		
+		float startTime = Time.time;
+	 
+	    // (Some code here which you want to measure)
+	 
 		blocks = new Block[row*column];
 		int index = 0;
 		
@@ -152,9 +198,8 @@ public class BlockManager : MonoBehaviour {
 				blockScript.SetScale(blockSize);
 				blockScript.SetVersion(prefab_version);
 				
-				if(useLightOnStart) {
+				if(useLightOnStart)
 					blockScript.LightOnStart();	
-				}
 				
 				float y = Random.Range(0,2) == 0 ? 0.1f : -0.1f;		
 				blockScript.SetPosition(new Vector3( x*(blockSize.x+padding), y, z*(blockSize.z+padding)));
@@ -186,19 +231,20 @@ public class BlockManager : MonoBehaviour {
 			//}
 		}
 		
-		CalculateRandomHeight();
+		if(gui_RandomHeight)
+			CalculateRandomHeight();
 		
 		initalized = true;
 		
 		HeuristicDistance();
 		
-		time += Time.deltaTime;
-		Debug.Log("Calculacted in " + time + " ms");
+		float endTime = Time.time;
+	    float timeElapsed = (endTime-startTime);
+		Debug.Log("Init Calculacted in " + timeElapsed + " ms");	
 	}
 	
 	IEnumerator ShowBlocks() {
-		
-		Debug.Log("ShowBlocks");
+		float startTime = Time.time;
 		
 		int index = 0;
 		int lastStep = 0;
@@ -213,7 +259,7 @@ public class BlockManager : MonoBehaviour {
 					if(index > 0) 
 					{ 
 						if(useAnimation)
-							blocks[index].DoStartAnim();
+							blocks[index].StartAnimation();
 						else
 							blocks[index].Show();
 						
@@ -231,7 +277,7 @@ public class BlockManager : MonoBehaviour {
 				{
 					if(c > 0)
 						if(useAnimation)
-							blocks[c].DoStartAnim();
+							blocks[c].StartAnimation();
 						else
 							blocks[c].Show();	
 				}
@@ -239,7 +285,11 @@ public class BlockManager : MonoBehaviour {
 				lastStep = index;
 				yield return new WaitForSeconds(0.05f);
 			}
-	}
+		}
+
+		float endTime = Time.time;
+	    float timeElapsed = (endTime-startTime);
+		Debug.Log("ShowBlocks Calculacted in " + timeElapsed + " ms");
 	}
 	
 	void CalculateNeighbors(int x, int z) {
@@ -261,6 +311,9 @@ public class BlockManager : MonoBehaviour {
 	}
 	
 	void CalculateRandomHeight() {
+		
+		float startTime = Time.time;
+		
 		
 		int index = 0;
 		for(int x=0; x< row; x++) {
@@ -318,6 +371,10 @@ public class BlockManager : MonoBehaviour {
 				index++;
 			}
 		}
+
+		float endTime = Time.time;
+	    float timeElapsed = (endTime-startTime);
+		Debug.Log("RandomHeight Calculacted in " + timeElapsed + " ms");	
 	}
 	
 	public Vector2 GetBlockIndex(Block block) {
@@ -343,6 +400,7 @@ public class BlockManager : MonoBehaviour {
 	
 	public void HeuristicDistance() {
 		
+		float time = 0;
 		int index = 0;
 		
 		for (int x = 0; x < row; x++)
@@ -363,13 +421,16 @@ public class BlockManager : MonoBehaviour {
 				}
 			}
 		}
+		
+		time += Time.deltaTime;
+		Debug.Log("HeuristicDistance Calculacted in " + time + " ms");
 	}
 	
 	public void GetShortestPath(Block start, Block destination) {
-		PathFind ph = new PathFind(row*column);
+		//PathFind ph = new PathFind(row*column);
 		
-		Vector2 startb = GetBlockIndex(start);
-		Vector2 stopb = GetBlockIndex(destination);
+		//Vector2 startb = GetBlockIndex(start);
+		//Vector2 stopb = GetBlockIndex(destination);
 	
 		/*
 		for(int i=0; i< System.Enum.GetValues(typeof(Neighbor)); i++)

@@ -98,16 +98,18 @@ public class Block : MonoBehaviour {
 	
 	public void CollidePlayer(bool collide) {
 		if(collide)
-			block.renderer.material.SetColor("_Color", Color.white);	
+			//block.renderer.material.SetColor("_Color", Color.red);	
+			StartCoroutine(SetColorAfterTime(Color.red));
 		else
-			block.renderer.material.SetColor("_Color", Color.red);
+			//block.renderer.material.SetColor("_Color", Color.white);
+			StartCoroutine(SetColorAfterTime(Color.white));
 	}
 	
 	public void SetYPos(float y) {
 		transform.position = new Vector3(transform.position.x, transform.position.y+y, transform.position.z);	
 	}
 	
-	public void DoStartAnim() {
+	public void StartAnimation() {
 		
 		if(!block.renderer.enabled)
 			block.renderer.enabled = true;
@@ -124,13 +126,45 @@ public class Block : MonoBehaviour {
 	
 	
 	public void Show() {
-		block.renderer.enabled = true;	
+		block.renderer.enabled = true;
+		Color c = block.renderer.material.color;
+		block.renderer.material.SetColor("_Color", new Color(c.r, c.g, c.b, 0));
+		
+		if(version.Contains("4")) {
+			StartCoroutine("AppearBlockAfterTime");
+		}
 	}
 	
 	public void Hide() {
 		block.renderer.enabled = false;	
 	}
-
+	
+	IEnumerator AppearBlockAfterTime() {
+		
+		int duration = 3;
+		Color c = block.renderer.material.color;
+		
+	    float pointInTime = 0f;
+	    while (pointInTime <= duration) {
+	    	block.renderer.material.SetColor("_Color", new Color(c.r, c.g, c.b, Mathf.Lerp(0, 1, pointInTime / duration)));
+	    	pointInTime += Time.deltaTime;
+	    	yield return null;
+	    }
+	}
+	
+	IEnumerator SetColorAfterTime(Color color) {
+		
+		float duration = 0.5f;
+		Color c = block.renderer.material.color;
+		
+	    float pointInTime = 0f;
+	    while (pointInTime <= duration) {
+			block.renderer.material.SetColor("_Color", Color.Lerp(c, color, pointInTime / duration));
+	    	pointInTime += Time.deltaTime;
+	    	yield return null;
+	    }
+	}
+	
 	
 	public Block GetNeighbor(Neighbor n) {
 		return neighbor[(int)n];
