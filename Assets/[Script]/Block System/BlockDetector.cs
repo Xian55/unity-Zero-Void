@@ -6,9 +6,7 @@ public class BlockDetector : MonoBehaviour {
 	
 	
 	void OnTriggerEnter(Collider c) {
-		
-		//Debug.Log(c.name);
-		
+
 		if(c.transform.tag == "Player") {
 			collisionWithPlayer = true;
 			SendCollideState(collisionWithPlayer);

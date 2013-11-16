@@ -146,23 +146,39 @@ public class BlockManager : MonoBehaviour {
 			
 			if(GUI.Button(new Rect(gui_start_x + gui_padding/2, gui_start_y + 8*gui_lineHeight, 80, gui_lineHeight), "Start")) {
 				
-				int sc = int.Parse(gui_Size);
-				blockSize = new Vector3(sc, 1, sc);
+				int try_size = -1;
+				int try_row = -1;
+				int try_column = -1;
 				
-				row = int.Parse(gui_Row);
-				column = int.Parse(gui_Column);
+				if(int.TryParse(gui_Size, out try_size) == false && try_size > 0) 
+					gui_Size = "Invalid";
 				
-				useAnimation = gui_UseAnimation;
-				useFastSpawn = gui_FastSpawn;
-				useLightOnStart = gui_LigthOnStart;
+				if(int.TryParse(gui_Row, out try_row) == false && try_row > 0) 
+					gui_Row = "Invalid";
 				
-				Init();
-				GUIStart = false;
+				if(int.TryParse(gui_Column, out try_column) == false && try_column > 0) 
+					gui_Column = "Invalid";		
+							
+				if(try_size > 0 && try_row > 0 && try_column > 0) {
+					GUIStart = false;
+					
+					blockSize = new Vector3(try_size, 1, try_size);
+					
+					row = try_row;
+					column = try_column;
+
+					useAnimation    = gui_UseAnimation;
+					useFastSpawn    = gui_FastSpawn;
+					useLightOnStart = gui_LigthOnStart;
+					
+					Init();
+					
+					player.SendMessage("Enable", true, SendMessageOptions.DontRequireReceiver);
+					player.GetComponent<MouseLook>().enabled = true;
+					Camera.main.GetComponent<MouseLook>().enabled = true;
+					player.GetComponent<FireBlasterScript>().enabled = true;
+				}
 				
-				player.SendMessage("Enable", true, SendMessageOptions.DontRequireReceiver);
-				player.GetComponent<MouseLook>().enabled = true;
-				Camera.main.GetComponent<MouseLook>().enabled = true;
-				player.GetComponent<FireBlasterScript>().enabled = true;
 			}
 		}
 		
@@ -454,7 +470,6 @@ public class BlockManager : MonoBehaviour {
 		*/
 	
 	}
-	
 		
 	#endregion
 	

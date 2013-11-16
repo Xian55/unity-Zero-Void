@@ -1,5 +1,10 @@
 2013-11-16  Xian55  <hq.protonox@gmail.com>
 
+	* BlockManager.cs:
+	* BlockDetector.cs: 
+
+2013-11-16  Xian55  <hq.protonox@gmail.com>
+
 	* Block.cs:
 	* ChangeLog:
 	* BlockManager.cs:
