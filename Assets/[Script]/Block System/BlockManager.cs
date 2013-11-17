@@ -3,6 +3,17 @@ using System.Collections;
 
 public class BlockManager : MonoBehaviour {
 	
+	static BlockManager _instance;
+	public static BlockManager Instance {
+		get {
+			if(_instance == null)
+				_instance = FindObjectOfType(typeof(BlockManager)) as BlockManager;
+			
+			return _instance;
+		}
+	}
+	
+	
 	#region Variables
 	Transform player;
 	Vector3 blockSize = new Vector3(2, 1, 2);
@@ -15,7 +26,7 @@ public class BlockManager : MonoBehaviour {
 	GameObject blockParent;
 	
 	
-	bool initalized = false;
+	public bool initalized = false;
 	
 	public bool useAnimation = false;
 	public bool useFastSpawn = true;
@@ -217,7 +228,11 @@ public class BlockManager : MonoBehaviour {
 				if(useLightOnStart)
 					blockScript.LightOnStart();	
 				
-				float y = Random.Range(0,2) == 0 ? 0.1f : -0.1f;		
+				float y = 0;
+				
+				if(gui_RandomHeight)
+					y = Random.Range(0,2) == 0 ? 0.1f : -0.1f;
+				
 				blockScript.SetPosition(new Vector3( x*(blockSize.x+padding), y, z*(blockSize.z+padding)));
 				
 				//Slow animation...
@@ -393,7 +408,7 @@ public class BlockManager : MonoBehaviour {
 		Debug.Log("RandomHeight Calculacted in " + timeElapsed + " ms");	
 	}
 	
-	public Vector2 GetBlockIndex(Block block) {
+	public Vector2 GetBlockVec2Index(Block block) {
 		
 		for(int x=0; x < row; x++) 
 		{
@@ -407,6 +422,24 @@ public class BlockManager : MonoBehaviour {
 			}	
 		}
 		return new Vector2(-1,-1);
+	}
+	
+	public int GetBlockIndex(Block block) {
+			
+		for(int i=0; i < blocks.Length; i++) 
+		{
+			if(blocks[i] == block)
+				return i;	
+	
+		}
+		return -1;	
+	}
+	
+	public Block GetBlock(int index) {
+		if(index >= 0 && index < blocks.Length)
+			return blocks[index];	
+		
+		return null;
 	}
 	
 	#endregion

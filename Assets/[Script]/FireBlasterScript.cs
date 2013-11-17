@@ -13,12 +13,12 @@ public class FireBlasterScript : MonoBehaviour {
 	float nextFire = 0;
 	
 	// Use this for initialization
-	void Start () {
+	void Start() {
 		cameraHeadTransform = Camera.main.transform;
 	}
 	
 	// Update is called once per frame
-	void Update () {
+	void Update() {
 		if(Input.GetMouseButton(0) && Time.time > nextFire) {
 			nextFire = Time.time + fireRate;
 			launchPosition = cameraHeadTransform.TransformPoint(0, 0, 0.2f);			

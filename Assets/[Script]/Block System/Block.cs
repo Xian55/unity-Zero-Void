@@ -96,13 +96,28 @@ public class Block : MonoBehaviour {
 		detector.SetScale(scale);
 	}
 	
-	public void CollidePlayer(bool collide) {
+	public IEnumerator CollidePlayer(bool collide) {
+		
 		if(collide)
 			//block.renderer.material.SetColor("_Color", Color.red);	
 			StartCoroutine(SetColorAfterTime(Color.red));
 		else
 			//block.renderer.material.SetColor("_Color", Color.white);
 			StartCoroutine(SetColorAfterTime(Color.white));
+		
+		return null;
+	}
+	
+	public IEnumerator CollidePlayerWithColor(bool collide, Color c, float duration=0.25f) {
+		
+		if(collide)
+			//block.renderer.material.SetColor("_Color", Color.red);	
+			StartCoroutine(SetColorAfterTime(c, duration));
+		else
+			//block.renderer.material.SetColor("_Color", Color.white);
+			StartCoroutine(SetColorAfterTime(Color.white, duration));
+		
+		return null;
 	}
 	
 	public void SetYPos(float y) {
@@ -141,7 +156,7 @@ public class Block : MonoBehaviour {
 	
 	IEnumerator AppearBlockAfterTime() {
 		
-		int duration = 3;
+		float duration = 3;
 		Color c = block.renderer.material.color;
 		
 	    float pointInTime = 0f;
@@ -152,9 +167,9 @@ public class Block : MonoBehaviour {
 	    }
 	}
 	
-	IEnumerator SetColorAfterTime(Color color) {
+	IEnumerator SetColorAfterTime(Color color, float dur=0.25f) {
 		
-		float duration = 0.5f;
+		float duration = dur;
 		Color c = block.renderer.material.color;
 		
 	    float pointInTime = 0f;
@@ -167,7 +182,10 @@ public class Block : MonoBehaviour {
 	
 	
 	public Block GetNeighbor(Neighbor n) {
-		return neighbor[(int)n];
+		if((int)n >= 0 && (int)n<=4)
+			return neighbor[(int)n];
+		
+		return null;
 	}
 	
 	public void SetNeighbor(Neighbor n, Block b) {
