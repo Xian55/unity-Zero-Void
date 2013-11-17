@@ -13,7 +13,6 @@ public class BlockManager : MonoBehaviour {
 		}
 	}
 	
-	
 	#region Variables
 	Transform player;
 	Vector3 blockSize = new Vector3(2, 1, 2);
@@ -41,12 +40,13 @@ public class BlockManager : MonoBehaviour {
 	
 	public float waitFewSeconds = 3;
 	
-	//For GUI START
+	#region GUI Variables
 	public bool GUIStart = false;
-	
+	bool GUIStart_InProgress = false;
+
 	int	gui_lineHeight = 20;
-	int gui_start_x = 5;
-	int gui_start_y = 5;
+	int gui_start_x = 10;
+	int gui_start_y = 10;
 	
 	int gui_padding = 30;
 	
@@ -82,10 +82,19 @@ public class BlockManager : MonoBehaviour {
 		}
 	}
 	
+	
 	bool   gui_FastSpawn = false;
 	bool   gui_LigthOnStart = false;
 	
 	bool   gui_RandomHeight = false;
+	
+	//Waypoints
+	WayPoint wp;
+	string gui_wp_start_id = "0";
+	string gui_wp_end_id   = "42";
+	bool   gui_wp_random_end = false;
+	
+	#endregion
 
 	#endregion
 	
@@ -97,25 +106,27 @@ public class BlockManager : MonoBehaviour {
 		player       = GameObject.FindWithTag("Player").transform;
 		blockParent  = GameObject.FindWithTag("Respawn");
 		
+		//!HACK needs to improve this system to handle multiple WP
+		wp           = FindObjectOfType(typeof(WayPoint)) as WayPoint;
 		
 		if(prefab_Block && !GUIStart)
-			Init();
+			Initalize();
 		
 		if(GUIStart) {
-			player.SendMessage("Enable", false, SendMessageOptions.DontRequireReceiver);
-			player.GetComponent<MouseLook>().enabled = false;
-			Camera.main.GetComponent<MouseLook>().enabled = false;
-			player.GetComponent<FireBlasterScript>().enabled = false;
+			SetPlayerComponents(false);
+			GUIStart_InProgress = true;
 		}
 	}
 	
 	void Update() {
 		
-		if(!GUIStart) {
-			if(waitFewSeconds < 0) {
-				if(prefab_Block && !justOnce && initalized) {
+		if(!GUIStart || !GUIStart_InProgress) 
+		{
+			if(waitFewSeconds < 0) 
+			{
+				if(prefab_Block && !justOnce && initalized) 
+				{
 					StartCoroutine("ShowBlocks");
-					
 					justOnce = true;
 				}
 			}
@@ -137,62 +148,7 @@ public class BlockManager : MonoBehaviour {
 	}
 	
 	void OnGUI() {
-		
-		if(GUIStart) {
-
-			GUI.Label(new Rect(gui_start_x, gui_start_y,                    105, gui_lineHeight), "Block Scale (int)"); gui_Size   = GUI.TextField(new Rect(105, gui_start_y                   , 3*gui_lineHeight, gui_lineHeight), gui_Size);
-			GUI.Label(new Rect(gui_start_x, gui_start_y + gui_lineHeight,    75, gui_lineHeight), "Row (int)");         gui_Row    = GUI.TextField(new Rect(105, gui_start_y +   gui_lineHeight, 3*gui_lineHeight, gui_lineHeight), gui_Row);
-			GUI.Label(new Rect(gui_start_x, gui_start_y + 2*gui_lineHeight,  75, gui_lineHeight), "Column (int)");      gui_Column = GUI.TextField(new Rect(105, gui_start_y + 2*gui_lineHeight, 3*gui_lineHeight, gui_lineHeight), gui_Column);
-			
-			
-			GUI.Label(new Rect(gui_start_x, gui_start_y + 3*gui_lineHeight, 400, gui_lineHeight), "What method would you like to use at start?");
-			
-			gui_Animation = GUI.Toggle(new Rect(gui_start_x + gui_padding, gui_start_y + 4*gui_lineHeight, 100, gui_lineHeight),  gui_UseAnimation, "Animation");
-			gui_Fade      = GUI.Toggle(new Rect(2*(gui_start_x + gui_padding) + GUILayoutUtility.GetRect(new GUIContent("Animation"), "label").width, gui_start_y + 4*gui_lineHeight, 200, gui_lineHeight),  gui_UseFade, "Fade");
-			
-			gui_FastSpawn    = GUI.Toggle(new Rect(gui_start_x, gui_start_y + 5*gui_lineHeight, 200, gui_lineHeight),    gui_FastSpawn, "Fast Spawn?");
-			gui_LigthOnStart = GUI.Toggle(new Rect(gui_start_x, gui_start_y + 6*gui_lineHeight, 200, gui_lineHeight), gui_LigthOnStart, "Light On Start?");
-			
-			gui_RandomHeight = GUI.Toggle(new Rect(gui_start_x, gui_start_y + 7*gui_lineHeight, 200, gui_lineHeight), gui_RandomHeight, "Random Height?");
-			
-			if(GUI.Button(new Rect(gui_start_x + gui_padding/2, gui_start_y + 8*gui_lineHeight, 80, gui_lineHeight), "Start")) {
-				
-				int try_size = -1;
-				int try_row = -1;
-				int try_column = -1;
-				
-				if(int.TryParse(gui_Size, out try_size) == false && try_size > 0) 
-					gui_Size = "Invalid";
-				
-				if(int.TryParse(gui_Row, out try_row) == false && try_row > 0) 
-					gui_Row = "Invalid";
-				
-				if(int.TryParse(gui_Column, out try_column) == false && try_column > 0) 
-					gui_Column = "Invalid";		
-							
-				if(try_size > 0 && try_row > 0 && try_column > 0) {
-					GUIStart = false;
-					
-					blockSize = new Vector3(try_size, 1, try_size);
-					
-					row = try_row;
-					column = try_column;
-
-					useAnimation    = gui_UseAnimation;
-					useFastSpawn    = gui_FastSpawn;
-					useLightOnStart = gui_LigthOnStart;
-					
-					Init();
-					
-					player.SendMessage("Enable", true, SendMessageOptions.DontRequireReceiver);
-					player.GetComponent<MouseLook>().enabled = true;
-					Camera.main.GetComponent<MouseLook>().enabled = true;
-					player.GetComponent<FireBlasterScript>().enabled = true;
-				}
-				
-			}
-		}
-		
+		ShowStartGUI();
 	}
 	
 	#endregion
@@ -200,11 +156,9 @@ public class BlockManager : MonoBehaviour {
 	
 	#region Blocks Functions
 	
-	void Init() {
+	void Initalize() {
 		
 		float startTime = Time.time;
-	 
-	    // (Some code here which you want to measure)
 	 
 		blocks = new Block[row*column];
 		int index = 0;
@@ -228,38 +182,19 @@ public class BlockManager : MonoBehaviour {
 				if(useLightOnStart)
 					blockScript.LightOnStart();	
 				
+				
 				float y = 0;
 				
 				if(gui_RandomHeight)
 					y = Random.Range(0,2) == 0 ? 0.1f : -0.1f;
 				
 				blockScript.SetPosition(new Vector3( x*(blockSize.x+padding), y, z*(blockSize.z+padding)));
-				
-				//Slow animation...
-				//if(!useFastAnimation) {
-				//	if(count > 0) { 
-				//		blockScript.DoStartAnim();
-				//		yield return new WaitForSeconds(0.1f);
-				//	}
-				//}
-				
 				blocks[index] = blockScript;
 				
 				CalculateNeighbors(x, z);
 				
 				index++;
 			}
-			
-			//Fast Animation
-			//if(useFastAnimation) {
-			//	for(int c=lastStep; c<count; c++) {
-			//		if(c>0)
-			//			blocks[c].DoStartAnim();	
-			//	}
-			//	
-			//	lastStep = count;
-			//	yield return new WaitForSeconds(0.1f);
-			//}
 		}
 		
 		if(gui_RandomHeight)
@@ -269,9 +204,7 @@ public class BlockManager : MonoBehaviour {
 		
 		HeuristicDistance();
 		
-		float endTime = Time.time;
-	    float timeElapsed = (endTime-startTime);
-		Debug.Log("Init Calculacted in " + timeElapsed + " ms");	
+		Debug.Log("Init Calculacted in " + (Time.time-startTime) + " ms");	
 	}
 	
 	IEnumerator ShowBlocks() {
@@ -290,9 +223,9 @@ public class BlockManager : MonoBehaviour {
 					if(index > 0) 
 					{ 
 						if(useAnimation)
-							blocks[index].StartAnimation();
+							StartCoroutine(GetBlock(index).StartAnimation());
 						else
-							blocks[index].Show();
+							StartCoroutine(GetBlock(index).Show());
 						
 						yield return new WaitForSeconds(0.1f);
 					}
@@ -308,9 +241,9 @@ public class BlockManager : MonoBehaviour {
 				{
 					if(c > 0)
 						if(useAnimation)
-							blocks[c].StartAnimation();
+							StartCoroutine(GetBlock(c).StartAnimation());
 						else
-							blocks[c].Show();	
+							StartCoroutine(GetBlock(c).Show());	
 				}
 				
 				lastStep = index;
@@ -318,9 +251,7 @@ public class BlockManager : MonoBehaviour {
 			}
 		}
 
-		float endTime = Time.time;
-	    float timeElapsed = (endTime-startTime);
-		Debug.Log("ShowBlocks Calculacted in " + timeElapsed + " ms");
+		Debug.Log("ShowBlocks Calculacted in " + (Time.time-startTime) + " ms");
 	}
 	
 	void CalculateNeighbors(int x, int z) {
@@ -329,14 +260,14 @@ public class BlockManager : MonoBehaviour {
 		
 		//South - North
 		if(index > 0 && z < column && index % row != 0) {
-			blocks[index].SetNeighbor(Neighbor.South, blocks[index-1]);
-			blocks[index-1].SetNeighbor(Neighbor.North, blocks[index]);
+			GetBlock(index).SetNeighbor(Neighbor.South, GetBlock(index-1));
+			GetBlock(index-1).SetNeighbor(Neighbor.North, GetBlock(index));
 		}
 		
 		//East - West
 		if(index >= row) {
-			blocks[index].SetNeighbor(Neighbor.West, blocks[index-row]);
-			blocks[index-row].SetNeighbor(Neighbor.East, blocks[index]);
+			GetBlock(index).SetNeighbor(Neighbor.West, GetBlock(index-row));
+			GetBlock(index-row).SetNeighbor(Neighbor.East, GetBlock(index));
 		}
 		
 	}
@@ -344,69 +275,188 @@ public class BlockManager : MonoBehaviour {
 	void CalculateRandomHeight() {
 		
 		float startTime = Time.time;
-		
-		
+
 		int index = 0;
-		for(int x=0; x< row; x++) {
-			for(int z=0; z<column; z++) {
+		for(int x=0; x<row; x++) 
+		{
+			for(int z=0; z<column; z++) 
+			{
+				if(index == 0) {
+					index++;
+					continue;
+				}
+			
+				float y = 0;
 				
-				if(index != 0) {
+				bool south = false;
+				bool north = false;
 				
-					float y = 0;
-					
-					bool south = false;
-					bool north = false;
-					
-					bool west = false;
-					bool east = false;
-					
-					if(blocks[index].GetNeighbor(Neighbor.South) != null) {
-						y += blocks[index].GetNeighbor(Neighbor.South).transform.position.y;
-						south = true;
-					}
-					
-					if(blocks[index].GetNeighbor(Neighbor.North) != null) {
-						y += blocks[index].GetNeighbor(Neighbor.North).transform.position.y;
-						north = true;
-					}
-					
-					if(blocks[index].GetNeighbor(Neighbor.West) != null) {
-						y += blocks[index].GetNeighbor(Neighbor.West).transform.position.y;
-						west = true;
-					}
-					
-					if(blocks[index].GetNeighbor(Neighbor.East) != null) {
-						y += blocks[index].GetNeighbor(Neighbor.East).transform.position.y;
-						east = true;
-					}
-					
-					if(south && north) {
-						y /= 2 + 0.2f;
-						//(Random.Range(0,2) == 0 ? 0.2f : -0.2f);	
-					}
-					
-					else if(west && east) {
-						y /= 2 + 0.2f;
-						//(Random.Range(0,2) == 0 ? 0.2f : -0.2f);	
-					}
-					
-					else {
-						y = 0.2f;
-							//Random.Range(0,2) == 0 ? 0.1f : -0.1f;	
-					}
-					
-					//Debug.Log(blocks[index].name + " Calculated:" + y);
-					blocks[index].SetYPos(y);
+				bool west = false;
+				bool east = false;
+				
+				if(GetBlock(index).GetNeighbor(Neighbor.South) != null) {
+					y += GetBlock(index).GetNeighbor(Neighbor.South).transform.position.y;
+					south = true;
 				}
 				
+				if(GetBlock(index).GetNeighbor(Neighbor.North) != null) {
+					y += GetBlock(index).GetNeighbor(Neighbor.North).transform.position.y;
+					north = true;
+				}
+				
+				if(GetBlock(index).GetNeighbor(Neighbor.West) != null) {
+					y += GetBlock(index).GetNeighbor(Neighbor.West).transform.position.y;
+					west = true;
+				}
+				
+				if(GetBlock(index).GetNeighbor(Neighbor.East) != null) {
+					y += GetBlock(index).GetNeighbor(Neighbor.East).transform.position.y;
+					east = true;
+				}
+				
+				
+				
+				if(south && north) 
+					y /= 2 + 0.2f;
+				else if(west && east)
+					y /= 2 + 0.2f;
+				else
+					y = 0.2f;
+				
+				//Debug.Log(GetBlock(index).name + " Calculated:" + y);
+				GetBlock(index).SetYPos(y);
+				
 				index++;
-			}
+			}	
 		}
 
-		float endTime = Time.time;
-	    float timeElapsed = (endTime-startTime);
-		Debug.Log("RandomHeight Calculacted in " + timeElapsed + " ms");	
+		Debug.Log("RandomHeight Calculacted in " + (Time.time-startTime) + " ms");	
 	}
+	
+	void SetPlayerComponents(bool b) {
+		player.SendMessage("Enable", b, SendMessageOptions.DontRequireReceiver);
+		player.GetComponent<MouseLook>().enabled = b;
+		player.GetComponent<FireBlasterScript>().enabled = b;
+		Camera.main.GetComponent<MouseLook>().enabled = b;
+	}
+	
+	string StringToIntWithError(string src, out int try_out) {
+		if(int.TryParse(src, out try_out) == false || try_out < 0) 
+			return "Invalid";	
+
+		return src;
+	}
+	
+	void ShowStartGUI() {
+		
+		if(GUIStart_InProgress) 
+		{
+			GUI.color = Color.red;
+			
+			GUI.Box(new Rect(gui_start_x-5, gui_start_y-5,                      280, 9*gui_lineHeight+5), "Grid System Settings");
+			
+			GUI.color = Color.white;
+			
+			GUI.Label(new Rect(gui_start_x, gui_start_y + gui_lineHeight,   105, gui_lineHeight), "Block Scale (int)"); gui_Size   = GUI.TextField(new Rect(105, gui_start_y +   gui_lineHeight, 3*gui_lineHeight, gui_lineHeight), gui_Size);
+			GUI.Label(new Rect(gui_start_x, gui_start_y + 2*gui_lineHeight,  75, gui_lineHeight), "Row (int)");         gui_Row    = GUI.TextField(new Rect(105, gui_start_y + 2*gui_lineHeight, 3*gui_lineHeight, gui_lineHeight), gui_Row);
+			GUI.Label(new Rect(gui_start_x, gui_start_y + 3*gui_lineHeight,  75, gui_lineHeight), "Column (int)");      gui_Column = GUI.TextField(new Rect(105, gui_start_y + 3*gui_lineHeight, 3*gui_lineHeight, gui_lineHeight), gui_Column);
+			
+			GUI.Label(new Rect(gui_start_x, gui_start_y + 4*gui_lineHeight, 400, gui_lineHeight), "What method would you like to use at start?");
+			
+			gui_Animation = GUI.Toggle(new Rect(gui_start_x + gui_padding, gui_start_y + 5*gui_lineHeight, 100, gui_lineHeight),  gui_UseAnimation, "Animation");
+			gui_Fade      = GUI.Toggle(new Rect(2*(gui_start_x + gui_padding) + GUILayoutUtility.GetRect(new GUIContent("Animation"), "label").width, gui_start_y + 5*gui_lineHeight, 200, gui_lineHeight),  gui_UseFade, "Fade");
+			
+			gui_FastSpawn    = GUI.Toggle(new Rect(gui_start_x, gui_start_y + 6*gui_lineHeight, 200, gui_lineHeight),    gui_FastSpawn, "Fast Spawn?");
+			gui_LigthOnStart = GUI.Toggle(new Rect(gui_start_x, gui_start_y + 7*gui_lineHeight, 200, gui_lineHeight), gui_LigthOnStart, "Light On Start?");
+			
+			gui_RandomHeight = GUI.Toggle(new Rect(gui_start_x, gui_start_y + 8*gui_lineHeight, 200, gui_lineHeight), gui_RandomHeight, "Random Height?");
+			
+			
+			//WayPoint
+			if(wp != null) {
+				GUI.color = Color.red;
+				GUI.Box  (new Rect(gui_start_x + 295, gui_start_y-5,                  250, 9*gui_lineHeight+5), "Waypoints System Settings");
+				
+				GUI.color = Color.white;
+				GUI.Label(new Rect(gui_start_x + 305, gui_start_y +   gui_lineHeight, 150, gui_lineHeight), "Start Block Index (int)");   gui_wp_start_id = GUI.TextField(new Rect(150 + 300, gui_start_y +   gui_lineHeight, 3*gui_lineHeight, gui_lineHeight), gui_wp_start_id);
+				
+				gui_wp_random_end = GUI.Toggle(new Rect(gui_start_x + 305, gui_start_y + 2*gui_lineHeight, 150, gui_lineHeight),  gui_wp_random_end, "Use Random End Point");
+				
+				if(!gui_wp_random_end) {
+					GUI.Label( new Rect(gui_start_x + 305, gui_start_y + 3*gui_lineHeight, 150, gui_lineHeight), "End Block Index   (int)");   gui_wp_end_id   = GUI.TextField(new Rect(150 + 300, gui_start_y + 3*gui_lineHeight, 3*gui_lineHeight, gui_lineHeight), gui_wp_end_id);
+				}
+			}
+			
+			
+			if(GUI.Button(new Rect(gui_start_x + gui_padding + 215, gui_start_y + 9.5f*gui_lineHeight, 80, gui_lineHeight), "Start")) 
+			{	
+				int try_size     = -1;
+				int try_row      = -1;
+				int try_column   = -1;
+				int try_wp_start = -1;
+				int try_wp_end   = -1;
+				
+				
+				gui_Size    = StringToIntWithError(  gui_Size, out try_size);
+				gui_Row     = StringToIntWithError(   gui_Row, out try_row);
+				gui_Column  = StringToIntWithError(gui_Column, out try_column);
+				
+				/* Old way to check input values
+				if(int.TryParse(gui_Size, out try_size) == false && try_size > 0) 
+					gui_Size = "Invalid";
+				
+				if(int.TryParse(gui_Row, out try_row) == false && try_row > 0) 
+					gui_Row = "Invalid";
+				
+				if(int.TryParse(gui_Column, out try_column) == false && try_column > 0) 
+					gui_Column = "Invalid";		
+					
+				*/
+				
+				
+				if(wp != null) {
+					
+					/*
+					if(int.TryParse(gui_wp_start_id, out try_wp_start) == false && try_wp_start > 0) 
+						gui_wp_start_id = "Invalid";	
+					
+					if(int.TryParse(gui_wp_end_id, out try_wp_end) == false && try_wp_end > 0) 
+						gui_wp_end_id = "Invalid";
+					*/
+					
+					gui_wp_start_id = StringToIntWithError(gui_wp_start_id, out try_wp_start);
+					gui_wp_end_id   = StringToIntWithError(  gui_wp_end_id, out try_wp_end);
+				}
+				
+				
+				//If everything is OK and Valid
+				if(try_size > 0 && try_row > 0 && try_column > 0 || (wp != null && try_wp_start > 0 && try_wp_end > 0)) {
+					
+					blockSize = new Vector3(try_size, 1, try_size);
+					
+					row = try_row;
+					column = try_column;
+
+					useAnimation    = gui_UseAnimation;
+					useFastSpawn    = gui_FastSpawn;
+					useLightOnStart = gui_LigthOnStart;
+					
+					Initalize();
+					
+					//WayPoints add
+					if(wp != null) {
+						wp.block_id_start = try_wp_start;
+						wp.block_id_end   =  gui_wp_random_end ? Random.Range(0, row * column) : try_wp_end; 
+					}
+					
+					GUIStart_InProgress = false;
+					SetPlayerComponents(true);
+				}
+			}	
+		}
+			
+	}
+	
 	
 	public Vector2 GetBlockVec2Index(Block block) {
 		
@@ -416,7 +466,7 @@ public class BlockManager : MonoBehaviour {
 			{
 				int index = row * x + z;
 				
-				if(blocks[index] == block) {
+				if(GetBlock(index) == block) {
 					return new Vector2(x,z);	
 				}
 			}	
@@ -428,7 +478,7 @@ public class BlockManager : MonoBehaviour {
 			
 		for(int i=0; i < blocks.Length; i++) 
 		{
-			if(blocks[i] == block)
+			if(GetBlock(i) == block)
 				return i;	
 	
 		}
@@ -441,7 +491,7 @@ public class BlockManager : MonoBehaviour {
 		
 		return null;
 	}
-	
+
 	#endregion
 	
 	
@@ -458,14 +508,14 @@ public class BlockManager : MonoBehaviour {
 			{
 				index = row * x + z;
 				
-				blocks[index].heuristicArray = new int[row*column];
+				GetBlock(index).heuristicArray = new int[row*column];
 				
 				for (int bx = 0; bx < row; bx++)
 				{
 					for (int bz = 0; bz < column; bz++)
 					{	
 						int p_index = row * bx + bz;
-						blocks[index].heuristicArray[p_index] = Mathf.Abs(x - bx) + Mathf.Abs(z - bz);
+						GetBlock(index).heuristicArray[p_index] = Mathf.Abs(x - bx) + Mathf.Abs(z - bz);
 					}
 				}
 			}

@@ -1,16 +1,25 @@
 using UnityEngine;
 using System.Collections;
 
+/// <summary>
+/// Block.
+/// </summary>
+
 public class Block : MonoBehaviour {
 	
 	#region Variables
+	
+	string version;
 	
 	public Block[] neighbor = new Block[4];
 	
 	public Transform block;
 	public BlockDetector detector;
 	
-	string version;
+	public bool ready;
+	
+	public Color activeColor = Color.red;
+	public Color normalColor = Color.white;
 	
 	#region PathFinding 
 
@@ -18,13 +27,15 @@ public class Block : MonoBehaviour {
 	
 	#endregion
 	
-	
 	#endregion
 	
 	
 	#region MonoBehave Functions
 	
 	void Awake() {
+		
+		ready = false;
+		
 		if(detector == null) {
 			GameObject detectCollider = GameObject.CreatePrimitive(PrimitiveType.Cube); 
 			detector = detectCollider.AddComponent<BlockDetector>();
@@ -38,41 +49,30 @@ public class Block : MonoBehaviour {
 	}
 	
 	//Not Used
-    void OnBecameVisible() {
-		//detector.enabled = true;
-    }
+    void OnBecameVisible() { }
 	
-    void OnBecameInvisible() {
-		//detector.enabled = false;
-    }
+    void OnBecameInvisible() { }
 	
 	//Debugging help
 	void OnDrawGizmosSelected() {
 		
-		//BlockManager mg = FindObjectOfType(typeof(BlockManager)) as BlockManager;
-		//Debug.Log(mg.GetBlockIndex(this));
-		
 		if(neighbor[(int)Neighbor.North] != null) {
 			Gizmos.color = Color.red;
-			//Gizmos.DrawCube(neighbor[(int)Neighbor.North].gameObject.transform.position + new Vector3(0,2,0), new Vector3(1,1,1));
 			Gizmos.DrawIcon(neighbor[(int)Neighbor.North].gameObject.transform.position + new Vector3(0,2,0), "a_n");
 		}
 		
 		if(neighbor[(int)Neighbor.South] != null) {
 			Gizmos.color = Color.blue;
-			//Gizmos.DrawCube(neighbor[(int)Neighbor.South].gameObject.transform.position + new Vector3(0,2,0), new Vector3(1,1,1));
 			Gizmos.DrawIcon(neighbor[(int)Neighbor.South].gameObject.transform.position + new Vector3(0,2,0), "a_s");
 		}
 		
 		if(neighbor[(int)Neighbor.West] != null) {
 			Gizmos.color = Color.green;
-			//Gizmos.DrawCube(neighbor[(int)Neighbor.West].gameObject.transform.position + new Vector3(0,2,0), new Vector3(1,1,1));
 			Gizmos.DrawIcon(neighbor[(int)Neighbor.West].gameObject.transform.position + new Vector3(0,2,0), "a_w");
 		}
 		
 		if(neighbor[(int)Neighbor.East] != null) {
 			Gizmos.color = Color.yellow;
-			//Gizmos.DrawCube(neighbor[(int)Neighbor.East].gameObject.transform.position + new Vector3(0,2,0), new Vector3(1,1,1));
 			Gizmos.DrawIcon(neighbor[(int)Neighbor.East].gameObject.transform.position + new Vector3(0,2,0), "a_e");
 		}
 		
@@ -82,6 +82,34 @@ public class Block : MonoBehaviour {
 	
 	
 	#region Other Functions
+	
+	void SetColor(Color color) {
+		block.renderer.material.SetColor("_Color", color);
+	}
+	
+	Color GetColor() {
+		return block.renderer.material.color;
+	}
+	
+	
+	public void SetColorNormal(Color color) {
+		normalColor = color;
+	}
+	
+	public void SetColorActive(Color color) {
+		activeColor = color;
+	}
+	
+	public void SetColors(Color normal, Color active) {
+		SetColorNormal(normal);	
+		SetColorActive(active);
+	}
+	
+	public void SetColorAlpha(float a) {
+		Color c = GetColor();
+		SetColor(new Color(c.r, c.g, c.b, a));	
+	}
+	
 	
 	public void SetVersion(string v) {
 		version = v;	
@@ -96,85 +124,91 @@ public class Block : MonoBehaviour {
 		detector.SetScale(scale);
 	}
 	
-	public IEnumerator CollidePlayer(bool collide) {
-		
-		if(collide)
-			//block.renderer.material.SetColor("_Color", Color.red);	
-			StartCoroutine(SetColorAfterTime(Color.red));
-		else
-			//block.renderer.material.SetColor("_Color", Color.white);
-			StartCoroutine(SetColorAfterTime(Color.white));
-		
-		return null;
-	}
-	
-	public IEnumerator CollidePlayerWithColor(bool collide, Color c, float duration=0.25f) {
-		
-		if(collide)
-			//block.renderer.material.SetColor("_Color", Color.red);	
-			StartCoroutine(SetColorAfterTime(c, duration));
-		else
-			//block.renderer.material.SetColor("_Color", Color.white);
-			StartCoroutine(SetColorAfterTime(Color.white, duration));
-		
-		return null;
-	}
-	
 	public void SetYPos(float y) {
 		transform.position = new Vector3(transform.position.x, transform.position.y+y, transform.position.z);	
 	}
 	
-	public void StartAnimation() {
+	
+	public IEnumerator CollidePlayer(bool collide) {
+		
+		if(collide)
+			StartCoroutine(SetColorAfterTime(activeColor));
+		else
+			StartCoroutine(SetColorAfterTime(normalColor));
+		
+		return null;
+	}
+	
+	public IEnumerator CollidePlayerWithColor(bool collide, Color color, float duration=0.25f) {
+		
+		if(collide)
+			StartCoroutine(SetColorAfterTime(color, duration));
+		else
+			StartCoroutine(SetColorAfterTime(normalColor, duration));
+		
+		return null;
+	}
+	
+	
+	public void LightOnStart() {
+		SetColor(normalColor);	
+	}
+	
+	
+	public IEnumerator StartAnimation() {
 		
 		if(!block.renderer.enabled)
 			block.renderer.enabled = true;
 		
 		string clip = version + "_Flip_" + (Random.Range(0,2) == 1 ? "X" : "Z") + "_0";
 		
-		if(animation[clip] != null)
+		if(animation[clip] != null) {
 			animation.Play(clip);
-	}
-	
-	public void LightOnStart() {
-		block.renderer.material.SetColor("_Color", new Color(1,1,1,1));	
-	}
-	
-	
-	public void Show() {
-		block.renderer.enabled = true;
-		Color c = block.renderer.material.color;
-		block.renderer.material.SetColor("_Color", new Color(c.r, c.g, c.b, 0));
-		
-		if(version.Contains("4")) {
-			StartCoroutine("AppearBlockAfterTime");
+			yield return new WaitForSeconds(animation[clip].length);	
 		}
+		
+		ready = true;	
+	}
+	
+	public IEnumerator Show() {
+		block.renderer.enabled = true;
+		SetColorAlpha(0f);
+		
+		//4 - Because the 4th prefab contain the new Shader which handle transparency and combined texture.
+		if(version.Contains("4"))
+			StartCoroutine(AppearBlockAfterTime());
+		
+		yield return new WaitForSeconds(3);
+		ready = true;
 	}
 	
 	public void Hide() {
 		block.renderer.enabled = false;	
 	}
 	
+	
 	IEnumerator AppearBlockAfterTime() {
 		
 		float duration = 3;
-		Color c = block.renderer.material.color;
+		Color c = GetColor();
 		
 	    float pointInTime = 0f;
-	    while (pointInTime <= duration) {
-	    	block.renderer.material.SetColor("_Color", new Color(c.r, c.g, c.b, Mathf.Lerp(0, 1, pointInTime / duration)));
+	    while (pointInTime <= duration) 
+		{
+	    	SetColor(new Color(c.r, c.g, c.b, Mathf.Lerp(0, 1, pointInTime / duration)));
 	    	pointInTime += Time.deltaTime;
 	    	yield return null;
 	    }
 	}
 	
-	IEnumerator SetColorAfterTime(Color color, float dur=0.25f) {
+	IEnumerator SetColorAfterTime(Color newColor, float dur=0.25f) {
 		
 		float duration = dur;
-		Color c = block.renderer.material.color;
+		Color oldColor = GetColor();
 		
 	    float pointInTime = 0f;
 	    while (pointInTime <= duration) {
-			block.renderer.material.SetColor("_Color", Color.Lerp(c, color, pointInTime / duration));
+			SetColor(Color.Lerp(oldColor, newColor, pointInTime / duration));
 	    	pointInTime += Time.deltaTime;
 	    	yield return null;
 	    }
@@ -191,11 +225,6 @@ public class Block : MonoBehaviour {
 	public void SetNeighbor(Neighbor n, Block b) {
 		neighbor[(int)n] = b;	
 	}
-	
-	#endregion
-	
-	
-	#region PathFind 
 	
 	#endregion
 	
