@@ -24,13 +24,13 @@ public class BlockManager : MonoBehaviour {
 	
 	GameObject blockParent;
 	
-	
 	public bool initalized = false;
 	
 	public bool useAnimation = false;
 	public bool useFastSpawn = true;
 	public bool useLightOnStart = false;
 	
+	public Chunk chunk;
 	
 	public Block[] blocks;
 	public int row = 10;
@@ -71,7 +71,8 @@ public class BlockManager : MonoBehaviour {
 	}
 	bool gui_Animation {
 		set {
-			if(value == true) {
+			if(value == true) 
+			{
 				gui_UseAnimation = true;
 				gui_UseFade = false;
 			}
@@ -89,11 +90,19 @@ public class BlockManager : MonoBehaviour {
 	bool   gui_RandomHeight = false;
 	
 	//Waypoints
-	WayPoint wp;
+	WayPointAgent wp;
 	string gui_wp_start_id = "0";
 	string gui_wp_end_id   = "42";
 	bool   gui_wp_random_end = false;
 	
+
+    //FPS
+    private float updateInterval = .016f;
+ 
+    private float accum = 0; // FPS accumulated over the interval
+    private float frames = 0; // Frames drawn over the interval
+    private float timeleft; // Left time for current interval
+
 	#endregion
 
 	#endregion
@@ -107,7 +116,7 @@ public class BlockManager : MonoBehaviour {
 		blockParent  = GameObject.FindWithTag("Respawn");
 		
 		//!HACK needs to improve this system to handle multiple WP
-		wp           = FindObjectOfType(typeof(WayPoint)) as WayPoint;
+		wp           = FindObjectOfType(typeof(WayPointAgent)) as WayPointAgent;
 		
 		if(prefab_Block && !GUIStart)
 			Initalize();
@@ -117,9 +126,14 @@ public class BlockManager : MonoBehaviour {
 			GUIStart_InProgress = true;
 		}
 	}
-	
-	void Update() {
-		
+
+    void Start()
+    {
+        timeleft = updateInterval;  
+    }
+
+	void Update() 
+	{
 		if(!GUIStart || !GUIStart_InProgress) 
 		{
 			if(waitFewSeconds < 0) 
@@ -134,17 +148,47 @@ public class BlockManager : MonoBehaviour {
 				waitFewSeconds -= Time.deltaTime;
 		}
 		
-		if(player.position.y < -5) {
+		if(player.position.y < -5) 
+		{
 			player.position = new Vector3(0,5,0);
 			player.rotation = Quaternion.identity;
 		}
 		
-		else if(Input.GetKey(KeyCode.T)) {
+		else if(Input.GetKey(KeyCode.T)) 
+		{
 			Screen.fullScreen = !Screen.fullScreen;
 			
 			if(!GUIStart)
 				Screen.lockCursor = !Screen.lockCursor;
 		}	
+
+
+        //fps
+        timeleft -= Time.deltaTime;
+        accum += Time.timeScale / Time.deltaTime;
+        ++frames;
+
+        // Interval ended - update GUI text and start new interval
+        if (timeleft <= 0.0)
+        {
+            // display two fractional digits (f2 format)
+            float fps = accum / frames;
+            string format = System.String.Format("{0:F2} FPS", fps);
+            guiText.text = format;
+
+            if (fps < 30)
+                guiText.material.color = Color.yellow;
+            else
+                if (fps < 10)
+                    guiText.material.color = Color.red;
+                else
+                    guiText.material.color = Color.green;
+
+            timeleft = updateInterval;
+            accum = 0.0F;
+            frames = 0;
+        }
+
 	}
 	
 	void OnGUI() {
@@ -182,7 +226,6 @@ public class BlockManager : MonoBehaviour {
 				if(useLightOnStart)
 					blockScript.LightOnStart();	
 				
-				
 				float y = 0;
 				
 				if(gui_RandomHeight)
@@ -201,6 +244,13 @@ public class BlockManager : MonoBehaviour {
 			CalculateRandomHeight();
 		
 		initalized = true;
+		
+		
+		//chunk = new Chunk(15, 5);
+		chunk = gameObject.AddComponent<Chunk>();
+		chunk.Set(15,5);
+		chunk.MoveBlocks(new Vector3(0, 1, 0));
+		
 		
 		HeuristicDistance();
 		
@@ -254,22 +304,23 @@ public class BlockManager : MonoBehaviour {
 		Debug.Log("ShowBlocks Calculacted in " + (Time.time-startTime) + " ms");
 	}
 	
-	void CalculateNeighbors(int x, int z) {
-		
+	void CalculateNeighbors(int x, int z) 
+	{
 		int index = row * x + z;
 		
 		//South - North
-		if(index > 0 && z < column && index % row != 0) {
+		if(index > 0 && z < column && index % row != 0) 
+		{
 			GetBlock(index).SetNeighbor(Neighbor.South, GetBlock(index-1));
 			GetBlock(index-1).SetNeighbor(Neighbor.North, GetBlock(index));
 		}
 		
 		//East - West
-		if(index >= row) {
+		if(index >= row) 
+		{
 			GetBlock(index).SetNeighbor(Neighbor.West, GetBlock(index-row));
 			GetBlock(index-row).SetNeighbor(Neighbor.East, GetBlock(index));
-		}
-		
+		}	
 	}
 	
 	void CalculateRandomHeight() {
@@ -281,7 +332,8 @@ public class BlockManager : MonoBehaviour {
 		{
 			for(int z=0; z<column; z++) 
 			{
-				if(index == 0) {
+				if(index == 0) 
+				{
 					index++;
 					continue;
 				}
@@ -314,8 +366,6 @@ public class BlockManager : MonoBehaviour {
 					east = true;
 				}
 				
-				
-				
 				if(south && north) 
 					y /= 2 + 0.2f;
 				else if(west && east)
@@ -324,7 +374,7 @@ public class BlockManager : MonoBehaviour {
 					y = 0.2f;
 				
 				//Debug.Log(GetBlock(index).name + " Calculated:" + y);
-				GetBlock(index).SetYPos(y);
+				GetBlock(index).AddYPos(y);
 				
 				index++;
 			}	
@@ -333,19 +383,22 @@ public class BlockManager : MonoBehaviour {
 		Debug.Log("RandomHeight Calculacted in " + (Time.time-startTime) + " ms");	
 	}
 	
-	void SetPlayerComponents(bool b) {
+	void SetPlayerComponents(bool b) 
+	{
 		player.SendMessage("Enable", b, SendMessageOptions.DontRequireReceiver);
 		player.GetComponent<MouseLook>().enabled = b;
 		player.GetComponent<FireBlasterScript>().enabled = b;
 		Camera.main.GetComponent<MouseLook>().enabled = b;
 	}
 	
-	string StringToIntWithError(string src, out int try_out) {
+	string StringToIntWithError(string src, out int try_out) 
+	{
 		if(int.TryParse(src, out try_out) == false || try_out < 0) 
 			return "Invalid";	
 
 		return src;
 	}
+	
 	
 	void ShowStartGUI() {
 		
@@ -401,29 +454,7 @@ public class BlockManager : MonoBehaviour {
 				gui_Row     = StringToIntWithError(   gui_Row, out try_row);
 				gui_Column  = StringToIntWithError(gui_Column, out try_column);
 				
-				/* Old way to check input values
-				if(int.TryParse(gui_Size, out try_size) == false && try_size > 0) 
-					gui_Size = "Invalid";
-				
-				if(int.TryParse(gui_Row, out try_row) == false && try_row > 0) 
-					gui_Row = "Invalid";
-				
-				if(int.TryParse(gui_Column, out try_column) == false && try_column > 0) 
-					gui_Column = "Invalid";		
-					
-				*/
-				
-				
 				if(wp != null) {
-					
-					/*
-					if(int.TryParse(gui_wp_start_id, out try_wp_start) == false && try_wp_start > 0) 
-						gui_wp_start_id = "Invalid";	
-					
-					if(int.TryParse(gui_wp_end_id, out try_wp_end) == false && try_wp_end > 0) 
-						gui_wp_end_id = "Invalid";
-					*/
-					
 					gui_wp_start_id = StringToIntWithError(gui_wp_start_id, out try_wp_start);
 					gui_wp_end_id   = StringToIntWithError(  gui_wp_end_id, out try_wp_end);
 				}
@@ -489,6 +520,7 @@ public class BlockManager : MonoBehaviour {
 		if(index >= 0 && index < blocks.Length)
 			return blocks[index];	
 		
+		Debug.LogError("GetBlock -> Block Not Found");
 		return null;
 	}
 

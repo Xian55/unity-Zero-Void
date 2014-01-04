@@ -3,18 +3,19 @@ using UnityEngine;
 public class BlockDetector : MonoBehaviour {
 	
 	bool collisionWithPlayer = false;
+	string tagName = "Player";
 	
 	
 	void OnTriggerEnter(Collider c) {
 
-		if(c.transform.tag == "Player") {
+		if(c.CompareTag(tagName)) {
 			collisionWithPlayer = true;
 			SendCollideState(collisionWithPlayer);
 		}
 	}
 	
 	void OnTriggerExit(Collider c) {
-		if(c.transform.tag == "Player") {
+		if(c.CompareTag(tagName)) {
 			collisionWithPlayer = false;
 			SendCollideState(collisionWithPlayer);
 		}

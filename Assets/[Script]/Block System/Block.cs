@@ -8,7 +8,9 @@ using System.Collections;
 public class Block : MonoBehaviour {
 	
 	#region Variables
-	
+
+    static Material sharedMat = null;
+
 	string version;
 	
 	public Block[] neighbor = new Block[4];
@@ -20,6 +22,7 @@ public class Block : MonoBehaviour {
 	
 	public Color activeColor = Color.red;
 	public Color normalColor = Color.white;
+
 	
 	#region PathFinding 
 
@@ -33,7 +36,12 @@ public class Block : MonoBehaviour {
 	#region MonoBehave Functions
 	
 	void Awake() {
-		
+
+        if (sharedMat == null)
+        {
+            sharedMat = (Material)Resources.Load("Material/Floor_Default");
+        }
+
 		ready = false;
 		
 		if(detector == null) {
@@ -47,11 +55,6 @@ public class Block : MonoBehaviour {
 		}
 		
 	}
-	
-	//Not Used
-    void OnBecameVisible() { }
-	
-    void OnBecameInvisible() { }
 	
 	//Debugging help
 	void OnDrawGizmosSelected() {
@@ -93,13 +96,15 @@ public class Block : MonoBehaviour {
 	
 	
 	public void SetColorNormal(Color color) {
-		normalColor = color;
+		//normalColor = color;
+        block.renderer.material = sharedMat;
 	}
 	
 	public void SetColorActive(Color color) {
 		activeColor = color;
 	}
 	
+
 	public void SetColors(Color normal, Color active) {
 		SetColorNormal(normal);	
 		SetColorActive(active);
@@ -124,17 +129,25 @@ public class Block : MonoBehaviour {
 		detector.SetScale(scale);
 	}
 	
-	public void SetYPos(float y) {
+	
+	public void AddPosition(Vector3 p) {
+		transform.position = new Vector3(transform.position.x + p.x, transform.position.y + p.y, transform.position.z + p.z);
+	}
+	
+	public void AddYPos(float y) {
 		transform.position = new Vector3(transform.position.x, transform.position.y+y, transform.position.z);	
 	}
 	
+
 	
 	public IEnumerator CollidePlayer(bool collide) {
 		
-		if(collide)
+		if(collide) {
 			StartCoroutine(SetColorAfterTime(activeColor));
-		else
+		}
+		else {
 			StartCoroutine(SetColorAfterTime(normalColor));
+		}
 		
 		return null;
 	}
@@ -150,8 +163,10 @@ public class Block : MonoBehaviour {
 	}
 	
 	
+
 	public void LightOnStart() {
-		SetColor(normalColor);	
+		SetColor(normalColor);
+        //SetColorNormal(normalColor);
 	}
 	
 	
@@ -164,9 +179,11 @@ public class Block : MonoBehaviour {
 		
 		if(animation[clip] != null) {
 			animation.Play(clip);
-			yield return new WaitForSeconds(animation[clip].length);	
+			yield return new WaitForSeconds(animation[clip].length + 0.2f);
 		}
-		
+
+        SetColorNormal(normalColor);
+
 		ready = true;	
 	}
 	
@@ -178,7 +195,10 @@ public class Block : MonoBehaviour {
 		if(version.Contains("4"))
 			StartCoroutine(AppearBlockAfterTime());
 		
-		yield return new WaitForSeconds(3);
+		yield return new WaitForSeconds(4f);
+
+        SetColorNormal(normalColor);
+
 		ready = true;
 	}
 	
@@ -199,7 +219,15 @@ public class Block : MonoBehaviour {
 	    	pointInTime += Time.deltaTime;
 	    	yield return null;
 	    }
-	}
+
+        /*
+            if (GetColor().a >= 0.98f)
+            {
+                SetColorNormal(normalColor);
+            }
+         
+         */
+    }
 	
 	IEnumerator SetColorAfterTime(Color newColor, float dur=0.25f) {
 		
@@ -210,14 +238,26 @@ public class Block : MonoBehaviour {
 	    while (pointInTime <= duration) {
 			SetColor(Color.Lerp(oldColor, newColor, pointInTime / duration));
 	    	pointInTime += Time.deltaTime;
+
+            if (newColor == normalColor)
+            {
+                SetColorNormal(Color.white);
+            }
+
 	    	yield return null;
 	    }
 	}
 	
-	
 	public Block GetNeighbor(Neighbor n) {
 		if((int)n >= 0 && (int)n<=4)
 			return neighbor[(int)n];
+		
+		return null;
+	}
+	
+	public Block GetNeighbor(int nIndex) {
+		if(nIndex >= 0 && nIndex <= 4)
+			return neighbor[nIndex];
 		
 		return null;
 	}
