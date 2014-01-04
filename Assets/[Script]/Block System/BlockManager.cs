@@ -31,6 +31,7 @@ public class BlockManager : MonoBehaviour {
 	public bool useFastSpawn = true;
 	public bool useLightOnStart = false;
 	
+	public Chunk chunk;
 	
 	public Block[] blocks;
 	public int row = 10;
@@ -182,7 +183,6 @@ public class BlockManager : MonoBehaviour {
 				if(useLightOnStart)
 					blockScript.LightOnStart();	
 				
-				
 				float y = 0;
 				
 				if(gui_RandomHeight)
@@ -201,6 +201,13 @@ public class BlockManager : MonoBehaviour {
 			CalculateRandomHeight();
 		
 		initalized = true;
+		
+		
+		//chunk = new Chunk(15, 5);
+		chunk = gameObject.AddComponent<Chunk>();
+		chunk.Set(15,5);
+		chunk.MoveBlocks(new Vector3(0, 1, 0));
+		
 		
 		HeuristicDistance();
 		
@@ -324,7 +331,7 @@ public class BlockManager : MonoBehaviour {
 					y = 0.2f;
 				
 				//Debug.Log(GetBlock(index).name + " Calculated:" + y);
-				GetBlock(index).SetYPos(y);
+				GetBlock(index).AddYPos(y);
 				
 				index++;
 			}	
@@ -401,29 +408,7 @@ public class BlockManager : MonoBehaviour {
 				gui_Row     = StringToIntWithError(   gui_Row, out try_row);
 				gui_Column  = StringToIntWithError(gui_Column, out try_column);
 				
-				/* Old way to check input values
-				if(int.TryParse(gui_Size, out try_size) == false && try_size > 0) 
-					gui_Size = "Invalid";
-				
-				if(int.TryParse(gui_Row, out try_row) == false && try_row > 0) 
-					gui_Row = "Invalid";
-				
-				if(int.TryParse(gui_Column, out try_column) == false && try_column > 0) 
-					gui_Column = "Invalid";		
-					
-				*/
-				
-				
 				if(wp != null) {
-					
-					/*
-					if(int.TryParse(gui_wp_start_id, out try_wp_start) == false && try_wp_start > 0) 
-						gui_wp_start_id = "Invalid";	
-					
-					if(int.TryParse(gui_wp_end_id, out try_wp_end) == false && try_wp_end > 0) 
-						gui_wp_end_id = "Invalid";
-					*/
-					
 					gui_wp_start_id = StringToIntWithError(gui_wp_start_id, out try_wp_start);
 					gui_wp_end_id   = StringToIntWithError(  gui_wp_end_id, out try_wp_end);
 				}

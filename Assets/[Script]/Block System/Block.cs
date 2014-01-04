@@ -20,6 +20,7 @@ public class Block : MonoBehaviour {
 	
 	public Color activeColor = Color.red;
 	public Color normalColor = Color.white;
+
 	
 	#region PathFinding 
 
@@ -124,17 +125,24 @@ public class Block : MonoBehaviour {
 		detector.SetScale(scale);
 	}
 	
-	public void SetYPos(float y) {
+	
+	public void AddPosition(Vector3 p) {
+		transform.position = new Vector3(transform.position.x + p.x, transform.position.y + p.y, transform.position.z + p.z);
+	}
+	
+	public void AddYPos(float y) {
 		transform.position = new Vector3(transform.position.x, transform.position.y+y, transform.position.z);	
 	}
 	
 	
 	public IEnumerator CollidePlayer(bool collide) {
 		
-		if(collide)
+		if(collide) {
 			StartCoroutine(SetColorAfterTime(activeColor));
-		else
+		}
+		else {
 			StartCoroutine(SetColorAfterTime(normalColor));
+		}
 		
 		return null;
 	}
@@ -213,7 +221,6 @@ public class Block : MonoBehaviour {
 	    	yield return null;
 	    }
 	}
-	
 	
 	public Block GetNeighbor(Neighbor n) {
 		if((int)n >= 0 && (int)n<=4)
