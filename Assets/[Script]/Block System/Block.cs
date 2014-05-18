@@ -166,7 +166,7 @@ public class Block : MonoBehaviour {
 
 	public void LightOnStart() {
 		SetColor(normalColor);
-        //SetColorNormal(normalColor);
+        //SetColorNormal(normalColor); 
 	}
 	
 	
