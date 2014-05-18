@@ -31,7 +31,7 @@ public class WayPointAgent : MonoBehaviour {
 	void Start () { }
 	
 	void Update () {
-		if(!BlockManager.Instance.initalized)
+		if(!BlockManager.Instance.isInitalized)
 			return;
 		
 		if(!done_getBlocks) {

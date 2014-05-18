@@ -9,9 +9,9 @@ public class Block : MonoBehaviour {
 	
 	#region Variables
 
-    static Material sharedMat = null;
+    public static Material sharedMat = null;
 
-	string version;
+    public string version;
 	
 	public Block[] neighbor = new Block[4];
 	
@@ -24,18 +24,19 @@ public class Block : MonoBehaviour {
 	public Color normalColor = Color.white;
 
 	
-	#region PathFinding 
+	    #region PathFinding 
 
 	public int[] heuristicArray;
 	
-	#endregion
+	    #endregion
 	
+
 	#endregion
 	
 	
 	#region MonoBehave Functions
 	
-	void Awake() {
+	private void Awake() {
 
         if (sharedMat == null)
         {
@@ -57,7 +58,7 @@ public class Block : MonoBehaviour {
 	}
 	
 	//Debugging help
-	void OnDrawGizmosSelected() {
+	private void OnDrawGizmosSelected() {
 		
 		if(neighbor[(int)Neighbor.North] != null) {
 			Gizmos.color = Color.red;
@@ -85,12 +86,15 @@ public class Block : MonoBehaviour {
 	
 	
 	#region Other Functions
-	
-	void SetColor(Color color) {
+
+        #region Color Change
+
+    private void SetColor(Color color) {
 		block.renderer.material.SetColor("_Color", color);
 	}
-	
-	Color GetColor() {
+
+    private Color GetColor()
+    {
 		return block.renderer.material.color;
 	}
 	
@@ -114,13 +118,18 @@ public class Block : MonoBehaviour {
 		Color c = GetColor();
 		SetColor(new Color(c.r, c.g, c.b, a));	
 	}
-	
-	
-	public void SetVersion(string v) {
+
+        #endregion
+
+
+    public void SetVersion(string v) {
 		version = v;	
 	}
-	
-	public void SetPosition(Vector3 pos) {
+
+
+        #region Transfrom Changes
+
+    public void SetPosition(Vector3 pos) {
 		transform.position = pos;
 	}
 	
@@ -137,10 +146,13 @@ public class Block : MonoBehaviour {
 	public void AddYPos(float y) {
 		transform.position = new Vector3(transform.position.x, transform.position.y+y, transform.position.z);	
 	}
-	
 
-	
-	public IEnumerator CollidePlayer(bool collide) {
+        #endregion
+
+
+        #region Collision with Player
+
+    public IEnumerator CollidePlayer(bool collide) {
 		
 		if(collide) {
 			StartCoroutine(SetColorAfterTime(activeColor));
@@ -161,33 +173,12 @@ public class Block : MonoBehaviour {
 		
 		return null;
 	}
-	
-	
 
-	public void LightOnStart() {
-		SetColor(normalColor);
-        //SetColorNormal(normalColor); 
-	}
-	
-	
-	public IEnumerator StartAnimation() {
-		
-		if(!block.renderer.enabled)
-			block.renderer.enabled = true;
-		
-		string clip = version + "_Flip_" + (Random.Range(0,2) == 1 ? "X" : "Z") + "_0";
-		
-		if(animation[clip] != null) {
-			animation.Play(clip);
-			yield return new WaitForSeconds(animation[clip].length + 0.2f);
-		}
+        #endregion
 
-        SetColorNormal(normalColor);
+        #region Appear and Disappear
 
-		ready = true;	
-	}
-	
-	public IEnumerator Show() {
+    public IEnumerator Show() {
 		block.renderer.enabled = true;
 		SetColorAlpha(0f);
 		
@@ -205,9 +196,35 @@ public class Block : MonoBehaviour {
 	public void Hide() {
 		block.renderer.enabled = false;	
 	}
-	
-	
-	IEnumerator AppearBlockAfterTime() {
+
+    public IEnumerator StartAnimation()
+    {
+
+        if (!block.renderer.enabled)
+            block.renderer.enabled = true;
+
+        string clip = version + "_Flip_" + (Random.Range(0, 2) == 1 ? "X" : "Z") + "_0";
+
+        if (animation[clip] != null)
+        {
+            animation.Play(clip);
+            yield return new WaitForSeconds(animation[clip].length + 0.2f);
+        }
+
+        SetColorNormal(normalColor);
+
+        ready = true;
+    }
+
+    public void LightOnStart()
+    {
+        SetColor(normalColor);
+    }
+
+        #endregion
+
+
+    private IEnumerator AppearBlockAfterTime() {
 		
 		float duration = 3;
 		Color c = GetColor();
@@ -229,7 +246,7 @@ public class Block : MonoBehaviour {
          */
     }
 	
-	IEnumerator SetColorAfterTime(Color newColor, float dur=0.25f) {
+	private IEnumerator SetColorAfterTime(Color newColor, float dur=0.25f) {
 		
 		float duration = dur;
 		Color oldColor = GetColor();
@@ -247,8 +264,11 @@ public class Block : MonoBehaviour {
 	    	yield return null;
 	    }
 	}
-	
-	public Block GetNeighbor(Neighbor n) {
+
+
+        #region Neighbor System
+
+    public Block GetNeighbor(Neighbor n) {
 		if((int)n >= 0 && (int)n<=4)
 			return neighbor[(int)n];
 		
@@ -263,11 +283,14 @@ public class Block : MonoBehaviour {
 	}
 	
 	public void SetNeighbor(Neighbor n, Block b) {
-		neighbor[(int)n] = b;	
-	}
-	
-	#endregion
-	
+		neighbor[(int)n] = b;
+    }
+
+        #endregion
+
+
+    #endregion
+
 }
 
 public enum Neighbor {
