@@ -17,6 +17,7 @@ public class BlockManager : MonoBehaviour {
     private Transform _player;
     private Vector3 _blockSize = new Vector3(2, 1, 2);
 
+    public bool initalized = false;
     private bool _isSpawned = false;
 
     private GameObject _prefab_Block;

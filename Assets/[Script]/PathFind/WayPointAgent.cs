@@ -165,12 +165,13 @@ public class WayPointAgent : MonoBehaviour {
 }
 
 [System.Serializable]
-public class LinkData {
+public struct LinkData {
+
 	public int id;
 	public int link;
 	
-	public LinkData(int ID = 0, int LINK = 0) {
-		link = LINK;
-		id = ID;
+	public LinkData(int id = 0, int link = 0) {
+		this.link = link;
+		this.id = id;
 	}
 }

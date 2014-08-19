@@ -162,13 +162,15 @@ public class WayPoint : MonoBehaviour {
 	#endregion
 }
 
+/*
 [System.Serializable]
 public class LinkData {
 	public int id;
 	public int link;
 	
 	public LinkData(int ID = 0, int LINK = 0) {
-		link = LINK;
-		id = ID;
+		link = link;
+		id = id;
 	}
 }
+*/
